@@ -17,7 +17,6 @@ from api.serializers import (
     AuthUserSerializer,
     AuthUserListSerializer,
     IngredientSerializer,
-    RecipeListSerializer,
     RecipeSerializer,
     RecipeFavoriteSerializer,
     SubscribeSerializer,
@@ -47,13 +46,13 @@ class AuthUserViewSet(
     def get_permissions(self):
         if self.action in ['list', 'create']:
             return [permissions.AllowAny()]
-        return super(AuthUserViewSet, self).get_permissions()
+        return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == 'subscribe':
             return SubscribeSerializer
         if self.request.method == 'POST':
-            return super(AuthUserViewSet, self).get_serializer_class()
+            return super().get_serializer_class()
         return AuthUserListSerializer
 
     @decorators.action(methods=['get'], detail=False, url_path='me')
@@ -165,7 +164,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = [AuthenticatedOrAuthorOrReadOnly]
-    serializer_class = RecipeListSerializer
+    serializer_class = RecipeSerializer
 
     def filter_queryset(self, queryset):
         if self.action != 'list':
@@ -187,39 +186,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tags__slug__in=tags)
         return queryset
 
-    def perform_create(self, serializer):
-        return serializer.save(author=self.request.user)
-
     def get_serializer_class(self):
         if self.action in ['favorite', 'shopping_cart']:
             return RecipeFavoriteSerializer
-        if self.request.method in ['POST', 'PATCH']:
-            return RecipeSerializer
-        return super(RecipeViewSet, self).get_serializer_class()
+        return super().get_serializer_class()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        recipe = self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        recipe_serializer = RecipeListSerializer(
-            recipe, context=self.get_serializer_context())
-        return Response(
-            recipe_serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
-        )
+    def perform_create(self, serializer):
+        return serializer.save(author=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        recipe = self.get_object()
-        serializer = self.get_serializer(
-            recipe, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        recipe_serializer = RecipeListSerializer(
-            recipe, context=self.get_serializer_context())
-        return Response(recipe_serializer.data)
+    def perform_destroy(self, instance):
+        instance.ingredients.all().delete()
+        instance.delete()
 
     @decorators.action(
         methods=['get'],
@@ -278,8 +255,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='favorite'
     )
     def favorite(self, request, pk):
-        response = self.favorite_and_shopping_cart(request, pk, Favorite)
-        return response
+        return self.favorite_and_shopping_cart(request, pk, Favorite)
 
     @decorators.action(
         methods=['post', 'delete'],
@@ -287,5 +263,4 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart'
     )
     def shopping_cart(self, request, pk):
-        response = self.favorite_and_shopping_cart(request, pk, ShoppingCart)
-        return response
+        return self.favorite_and_shopping_cart(request, pk, ShoppingCart)

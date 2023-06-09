@@ -76,6 +76,10 @@ class Ingredient(models.Model):
 
 
 class RecipeIngredient(models.Model):
+    recipe_id = models.IntegerField(
+        verbose_name='Рецепт',
+        help_text='Идентификатор рецепта',
+    )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
@@ -93,7 +97,7 @@ class RecipeIngredient(models.Model):
         verbose_name_plural = 'Ингредиенты в рецепте'
         constraints = [
             models.UniqueConstraint(
-                fields=['ingredient', 'amount'],
+                fields=['recipe_id', 'ingredient', 'amount'],
                 name='unique_recipeingredients'
             )
         ]
@@ -108,7 +112,7 @@ class Recipe(models.Model):
         Tag,
         related_name='recipes',
         verbose_name='Тэги',
-        help_text='Введите тэги'
+        help_text='Введите тэги',
     )
     author = models.ForeignKey(
         AuthUser,

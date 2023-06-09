@@ -42,7 +42,8 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(RecipeIngredient)
 class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('id', 'amount')
+    list_display = ('recipe_id', 'ingredient', 'amount')
+    list_filter = ('ingredient',)
 
 
 @admin.register(Favorite)
