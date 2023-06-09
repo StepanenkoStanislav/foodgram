@@ -76,8 +76,7 @@ class Ingredient(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    recipe_ingredient_id = models.AutoField(primary_key=True)
-    id = models.ForeignKey(
+    ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
         related_name='ingredients',
@@ -92,10 +91,16 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецепте'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'amount'],
+                name='unique_recipeingredients'
+            )
+        ]
 
     def __str__(self):
-        return (f'{self.id.name}: {self.amount} '
-                f'{self.id.measurement_unit.measurement_unit}')
+        return (f'{self.ingredient.name}: {self.amount} '
+                f'{self.ingredient.measurement_unit.measurement_unit}')
 
 
 class Recipe(models.Model):

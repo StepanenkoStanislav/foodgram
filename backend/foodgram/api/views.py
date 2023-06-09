@@ -1,4 +1,5 @@
 from django.contrib.auth import password_validation
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import (
@@ -6,7 +7,6 @@ from rest_framework import (
     mixins,
     decorators,
     status,
-    exceptions,
     permissions,
 )
 from rest_framework.response import Response
@@ -71,11 +71,15 @@ class AuthUserViewSet(
         current_password = request.data.get('current_password')
         new_password = request.data.get('new_password')
         if not request.user.check_password(current_password):
-            raise exceptions.ValidationError(
-                {'current_password': ['Неверно введен текущий пароль.']})
+            return Response(
+                {'current_password': ['Неверно введен текущий пароль.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if not new_password:
-            raise exceptions.ValidationError(
-                {'new_password': ['Обязательное поле.']})
+            return Response(
+                {'new_password': ['Обязательное поле.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         errors = dict()
         try:
             password_validation.validate_password(
@@ -84,7 +88,7 @@ class AuthUserViewSet(
             )
         except password_validation.ValidationError as err:
             errors['password'] = list(err.messages)
-            raise exceptions.ValidationError(errors)
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         request.user.set_password(new_password)
         request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -121,17 +125,23 @@ class AuthUserViewSet(
         subscribe_exists = subscribe.exists()
         if request.method == 'POST':
             if subscribe_exists:
-                raise exceptions.ValidationError(
-                    {'errors': 'Вы уже подписаны на этого автора.'})
+                return Response(
+                    {'errors': 'Вы уже подписаны на этого автора.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if author == request.user:
-                raise exceptions.ValidationError(
-                    {'errors': 'Вы не можете подписаться на самого себя.'})
+                return Response(
+                    {'errors': 'Вы не можете подписаться на самого себя.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             Subscribe.objects.create(subscriber=request.user, author=author)
             serializer = self.get_serializer(author)
             return Response(serializer.data)
         if not subscribe_exists:
-            raise exceptions.ValidationError(
-                {'errors': 'Вы не подписаны на этого автора.'})
+            return Response(
+                {'errors': 'Вы не подписаны на этого автора.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         subscribe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -222,20 +232,45 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = ('attachment; '
                                            'filename=shopping_cart.txt')
         shopping_carts = ShoppingCart.objects.filter(user=request.user)
-        ingredients = dict()
-        for shopping_cart in shopping_carts:
-            for ingredient in shopping_cart.recipe.ingredients.all():
-                ingredient_name = (f'{ingredient.id.name} '
-                                   f'({ingredient.id.measurement_unit})')
-                if ingredient_name not in ingredients:
-                    ingredients[ingredient_name] = ingredient.amount
-                else:
-                    ingredients[ingredient_name] += ingredient.amount
+        ingredients = shopping_carts.values_list(
+            'recipe__ingredients__ingredient__name',
+            ('recipe__ingredients__ingredient__measurement_unit__'
+             'measurement_unit')
+        ).annotate(Sum('recipe__ingredients__amount'))
         lines = []
-        for name, amount in ingredients.items():
-            lines.append(f'- {name}: {amount}\n')
+        for ingredient in ingredients:
+            lines.append(
+                f'- {ingredient[0]} [{ingredient[1]}]: {ingredient[2]}\n'
+            )
         response.writelines(lines)
         return response
+
+    def favorite_and_shopping_cart(self, request, pk, model):
+        recipe = get_object_or_404(Recipe, id=pk)
+        instance = model.objects.filter(
+            user=self.request.user,
+            recipe=recipe
+        )
+        instance_exists = instance.exists()
+        if request.method == 'POST':
+            if instance_exists:
+                return Response(
+                    {'errors': 'Этот рецепт уже добавлен.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            model.objects.create(
+                user=self.request.user,
+                recipe=recipe
+            )
+            serializer = self.get_serializer(recipe)
+            return Response(serializer.data)
+        if not instance_exists:
+            return Response(
+                {'errors': 'Этот рецепт не был добавлен.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
         methods=['post', 'delete'],
@@ -243,27 +278,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='favorite'
     )
     def favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, id=pk)
-        favorite = Favorite.objects.filter(
-            user=self.request.user,
-            recipe=recipe
-        )
-        favorite_exists = favorite.exists()
-        if request.method == 'POST':
-            if favorite_exists:
-                raise exceptions.ValidationError(
-                    {'errors': 'Этот рецепт уже добавлен в избранное.'})
-            Favorite.objects.create(
-                user=self.request.user,
-                recipe=recipe
-            )
-            serializer = self.get_serializer(recipe)
-            return Response(serializer.data)
-        if not favorite_exists:
-            raise exceptions.ValidationError(
-                {'errors': 'Этого рецепта нет в избранном.'})
-        favorite.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = self.favorite_and_shopping_cart(request, pk, Favorite)
+        return response
 
     @decorators.action(
         methods=['post', 'delete'],
@@ -271,24 +287,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart'
     )
     def shopping_cart(self, request, pk):
-        recipe = get_object_or_404(Recipe, id=pk)
-        shopping_cart = ShoppingCart.objects.filter(
-            user=self.request.user,
-            recipe=recipe
-        )
-        recipe_in_the_cart = shopping_cart.exists()
-        if request.method == 'POST':
-            if recipe_in_the_cart:
-                raise exceptions.ValidationError(
-                    {'errors': 'Этот рецепт уже добавлен в корзину.'})
-            ShoppingCart.objects.create(
-                user=self.request.user,
-                recipe=recipe
-            )
-            serializer = self.get_serializer(recipe)
-            return Response(serializer.data)
-        if not recipe_in_the_cart:
-            raise exceptions.ValidationError(
-                {'errors': 'Этого рецепта нет в корзине.'})
-        shopping_cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = self.favorite_and_shopping_cart(request, pk, ShoppingCart)
+        return response
