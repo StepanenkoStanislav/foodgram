@@ -69,8 +69,10 @@ DATABASES = {
         'ENGINE': os.getenv(
             'DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': os.getenv('DB_NAME', default='foodgram'),
-        'USER': os.getenv('POSTGRES_USER', default='foodgram_api'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='1234'),
+        'USER': os.getenv('POSTGRES_USER', default='foodgram_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='password'),
+        'DB_HOST': os.getenv('DB_HOST', default='db'),
+        'DB_PORT': os.getenv('DB_PORT', default='5432'),
     }
 }
 
