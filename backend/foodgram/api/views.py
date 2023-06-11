@@ -96,18 +96,19 @@ class AuthUserViewSet(
         methods=['get'],
         detail=False,
         url_path='subscriptions',
-        permission_classes=[permissions.IsAuthenticated]
+        permission_classes=[permissions.IsAuthenticated],
     )
     def subscriptions(self, request):
         subscriptions = AuthUser.objects.filter(
             username__in=Subscribe.objects.filter(
                 subscriber=request.user).values_list('author__username'))
+        page = self.paginate_queryset(subscriptions)
         serializer = SubscribeSerializer(
-            subscriptions,
+            page,
             many=True,
             context=self.get_serializer_context()
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @decorators.action(
         methods=['post', 'delete'],
