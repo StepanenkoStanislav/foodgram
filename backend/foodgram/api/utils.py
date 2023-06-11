@@ -13,5 +13,4 @@ def create_and_add_ingredients_to_recipe(recipe, ingredients):
         )
     recipe_ingredients = RecipeIngredient.objects.bulk_create(
         recipe_ingredients)
-    for recipe_ingredient in recipe_ingredients:
-        recipe.ingredients.add(recipe_ingredient)
+    recipe.ingredients.add(*recipe_ingredients)
