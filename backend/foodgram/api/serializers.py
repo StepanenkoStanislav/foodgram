@@ -44,6 +44,7 @@ class AuthUserSerializer(serializers.ModelSerializer):
         return email
 
     def validate_username(self, username):
+        username = username.lower()
         if AuthUser.objects.filter(username=username).exists():
             raise exceptions.ValidationError(
                 f'Пользователь с ником {username} уже существует.')
