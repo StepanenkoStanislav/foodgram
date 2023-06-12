@@ -184,7 +184,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
         if ingredients:
-            recipe.ingredients.clear()
+            recipe.ingredients.all().delete()
             create_and_add_ingredients_to_recipe(recipe, ingredients)
         if tags:
             recipe.tags.clear()
@@ -213,6 +213,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                     'amount': ingredient['amount']
                 }
             )
+        to_rep['image'] = instance.image.url
         return to_rep
 
 
