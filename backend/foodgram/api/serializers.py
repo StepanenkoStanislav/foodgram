@@ -150,6 +150,10 @@ class RecipeSerializer(serializers.ModelSerializer):
                 'Этот список не может быть пустым.')
         check_doubles = []
         for ingredient in ingredients:
+            amount = ingredient.get('amount')
+            if not amount or amount <= 0:
+                raise exceptions.ValidationError(
+                    f'Укажите кол-во ингредиента.')
             ingredient = ingredient['id']
             if ingredient in check_doubles:
                 raise exceptions.ValidationError(
