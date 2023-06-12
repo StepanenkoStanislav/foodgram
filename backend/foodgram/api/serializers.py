@@ -153,11 +153,29 @@ class RecipeSerializer(serializers.ModelSerializer):
             amount = ingredient.get('amount')
             if not amount or amount <= 0:
                 raise exceptions.ValidationError(
-                    f'Укажите кол-во ингредиента.')
+                    [
+                        {},
+                        {
+                            'amount': [
+                                (f'Укажите кол-во ингредиента '
+                                 f'({ingredient.get("id").name}).')
+                            ]
+                        }
+                    ]
+                )
             ingredient = ingredient['id']
             if ingredient in check_doubles:
                 raise exceptions.ValidationError(
-                    f'Уберите повторяющиеся ингредиенты ({ingredient.name}).')
+                    [
+                        {},
+                        {
+                            'ingredients': [
+                                (f'Уберите повторяющиеся ингредиенты '
+                                 f'({ingredient.name}).')
+                            ]
+                        }
+                    ]
+                )
             check_doubles.append(ingredient)
         return ingredients
 
