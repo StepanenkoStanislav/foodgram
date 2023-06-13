@@ -56,7 +56,6 @@ docker-compose exec backend python manage.py collectstatic
 ## Технологии
 
 В проекте используются следующие технологии:
-- python 3.7
+- Python 3.7
 - Django 3.2
 - DjangoRestFramework 3.12.4
-- Docker
