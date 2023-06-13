@@ -7,6 +7,8 @@
  скачивать сводный список продуктов, необходимых для приготовления одного 
  или нескольких выбранных блюд.
 
+Описание [ендпоинтов API](http://foodgram.myftp.biz/api/docs/redoc.html)
+
 ### Адрес
 
 http://foodgram.myftp.biz/
@@ -50,8 +52,6 @@ docker-compose exec backend python manage.py createsuperuser
 ```python
 docker-compose exec backend python manage.py collectstatic
 ```
-
-Описание [ендпоинтов API](http://foodgram.myftp.biz/api/docs/redoc.html)
 
 ## Технологии
 
