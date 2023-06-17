@@ -39,6 +39,13 @@ docker-compose exec backend python manage.py createsuperuser
 docker-compose exec backend python manage.py collectstatic
 ```
 
+Загрузить тестовые данные
+```python
+docker-compose cp ../data/data.json backend:/app/
+docker-compose cp ../data/media backend:/app/
+docker-compose exec backend python manage.py loaddata data.json
+```
+
 ## Технологии
 
 В проекте используются следующие технологии:
