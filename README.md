@@ -11,7 +11,7 @@
 
 
 ## Установка
-В директории foodgram-project-react/infra необходимо создать файл .env (пример находится в foodgram-project-react/infra/example.env), где необходимо указать:
+В директории foodgram/infra необходимо создать файл .env (пример находится в foodgram/infra/example.env), где необходимо указать:
 ```python
 DB_ENGINE=django.db.backends.postgresql - указываем, что работаем с postgresql
 DB_NAME=foodgram_user - имя базы данных
@@ -24,7 +24,7 @@ SECRET_KEY=secret_key - SECRET_KEY из settings.py
 
 Запуск проекта
 ```python
-# В директории foodgram-project-react/infra
+# В директории foodgram/infra
 docker-compose up --build
 docker-compose exec backend python manage.py migrate
 ```
@@ -61,3 +61,7 @@ docker-compose exec backend python manage.py loaddata data.json
 - DjangoRestFramework 3.12.4
 - Postgresql 13.0-alpine
 - Docker 20.10.24
+
+## Автор
+
+[![Telegram Badge](https://img.shields.io/badge/StepanenkoStanislav-blue?logo=telegram&logoColor=white)](https://t.me/tme_zoom) [![Gmail Badge](https://img.shields.io/badge/-Gmail-red?style=flat&logo=Gmail&logoColor=white)](mailto:stepanenko.s.a.dev@gmail.com)
